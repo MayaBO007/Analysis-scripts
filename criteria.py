@@ -12,13 +12,10 @@ import matplotlib.pyplot as plt
 import json
 from scipy import stats
 
-def find_criteria(path, sec, stat_func):
-    # Opening JSON file
-    with open(path) as json_file:
-        data = json.load(json_file)
+def find_criteria(data, sec, stat_func, max_iter = 3):
     
     cars = np.array(data['allChoices'])
-    press = np.array(data['allCorrectFirstPress'])
+    press = np.array(data['correctFirstBluePress'] + data['correctFirstRedPress'])
     
     #sec = 30#int(input('Seconds to slide on: '))
     dt = 1000 * sec
@@ -26,7 +23,9 @@ def find_criteria(path, sec, stat_func):
     
     means_dict = {'time': [], 'per': []}
     h = 0
+    stat_counter = 0
     for i in range(0, max_time, dt):
+        
         t_min = 0
         t_max = i+dt
         
@@ -44,24 +43,63 @@ def find_criteria(path, sec, stat_func):
         j = i//dt
         if h != 0:
             continue
+        
         if j > 90//sec:
-            if stat_func(means_df['per'][j-(60//sec-1):j-(30//sec-1)] , means_df['per'][j-(30//sec-1):])[1] > 0.05:
-                plt.plot(means_df['time'], means_df['per'], color = 'k')
-                #plt.vlines(j*sec,0.65,0.75, 'r', '--')
-                #return True, j
-                h = j*sec
+            pval = stat_func(means_df['per'][j-(60//sec-1):j-(30//sec-1)] , means_df['per'][j-(30//sec-1):])[1]
+            #pval = stat_func(means_df['per'][j-(45//sec-1):j-(15//sec-1)] , means_df['per'][j-(30//sec-1):])[1]
+            if pval > 0.05:
+                stat_counter += 1
+                if stat_counter >= max_iter:
+                    plt.plot(means_df['time'], means_df['per'], color = 'k')
+                    plt.vlines(j*sec, min(means_df['per']) - 0.01 , max(means_df['per']) + 0.01 , 'r', '--')
+                    h = j*sec
+                    return h
+            elif stat_counter > 0:
+                #pass
+                stat_counter = 0
     plt.plot(means_df['time'], means_df['per'], color = 'k')
-    plt.vlines(h,0.65,0.75, 'r', '--')
-    plt.title(f'Slides = {sec} sec.')
-    #return False
-        #if j < 90//sec:
-        #    pvals.append(1)
-        #else:
-            #p_val = stats.ttest_rel(means_df['per'][j-(60//sec-1):j-(30//sec-1)] , means_df['per'][j-(30//sec-1):])[1]
-            #p = 0.65 if p_val < 0.05 else 0.8
-            #pvals.append(p)
+    plt.vlines(h, min(means_df['per']) - 0.01 , max(means_df['per']) + 0.01 , 'r', '--')
+    plt.title(f'Slides = {sec} sec.\nFunc = {str(stat_func)}')
+    plt.show()
+    return -1
+    #return h
 
-    #plt.plot(means_df['time'], means_df['per'])
-    #plt.plot(means_df['time'], pvals)
+path = 'results.json'
+# Opening JSON file
+with open(path) as json_file:
+    data1 = json.load(json_file)
+    
+#find_criteria(data1, 30, stats.wilcoxon)
 
-find_criteria('results.json', 30, stats.wilcoxon)
+
+#%%
+path = 'Downloads/results(7).json'
+
+with open(path) as json_file:
+    data = json.load(json_file)
+
+yoda = [d for d in data if '6252' in d['subId']]
+yoda = [d for d in yoda if '19' in d['createdAt']]
+
+
+def find_max(lst):
+    idx = -1
+    max_val = -1
+    for i in range(len(lst)):
+        try:
+            choices = len(lst[i]['allChoices'])
+        except:
+            continue
+        if choices > max_val:
+            max_val = choices
+            idx = i
+    return lst[idx]
+
+yoda = find_max(yoda)
+
+find_criteria(yoda, 5, stats.ttest_rel, 6)
+#find_criteria(yoda, 5, stats.wilcoxon, 6)
+
+
+
+
