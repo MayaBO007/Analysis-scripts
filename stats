@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jan 31 10:39:23 2023
+
+@author: maya
+"""
+
+
+from scipy import stats
+import pickle
+
+
+file1 = 'all_data_ST'
+dataForStat1 = open(file1,'rb')
+data_ST = pickle.load(dataForStat1)
+
+file2 = 'all_data_ET'
+dataForStat2 = open(file2,'rb')
+data_ET = pickle.load(dataForStat2)
+
+both_data = data_ST.append(data_ET, ignore_index=True)
+
+dev_button_perc_stat = stats.mannwhitneyu(data_ST['dev_button_perc'], data_ET['dev_button_perc'])
+dev_tot_perc_stat = stats.mannwhitneyu(data_ST['dev_tot_perc'], data_ET['dev_tot_perc'])
+nat_perc_stat = stats.mannwhitneyu(data_ST['nat_perc'], data_ET['nat_perc'])
+nondev_button_perc_stat = stats.mannwhitneyu(data_ST['nondev_button_perc'], data_ET['nondev_button_perc'])
+switch_perc_stat = stats.mannwhitneyu(data_ST['switch_perc'], data_ET['switch_perc'])
+yellow_accu_stat = stats.mannwhitneyu(data_ST['yellow_accu'], data_ET['yellow_accu'])
+
